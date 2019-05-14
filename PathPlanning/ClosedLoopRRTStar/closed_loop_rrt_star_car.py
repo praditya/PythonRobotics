@@ -5,9 +5,6 @@ author: AtsushiSakai(@Atsushi_twi)
 
 """
 
-import sys
-sys.path.append("../ReedsSheppPath/")
-
 import random
 import math
 import copy
@@ -15,8 +12,16 @@ import numpy as np
 import pure_pursuit
 import matplotlib.pyplot as plt
 
-import reeds_shepp_path_planning
-import unicycle_model
+import sys
+import os
+sys.path.append(os.path.dirname(
+    os.path.abspath(__file__)) + "/../ReedsSheppPath/")
+
+try:
+    import reeds_shepp_path_planning
+    import unicycle_model
+except:
+    raise
 
 show_animation = True
 
@@ -130,28 +135,8 @@ class RRT():
             fy.append(self.end.y)
             fyaw.append(self.end.yaw)
             return True, fx, fy, fyaw, fv, ft, fa, fd
-        else:
-            return False, None, None, None, None, None, None, None
 
-    def calc_tracking_path(self, path):
-        path = np.matrix(path[::-1])
-        ds = 0.2
-        for i in range(10):
-            lx = path[-1, 0]
-            ly = path[-1, 1]
-            lyaw = path[-1, 2]
-            move_yaw = math.atan2(path[-2, 1] - ly, path[-2, 0] - lx)
-            if abs(lyaw - move_yaw) >= math.pi / 2.0:
-                print("back")
-                ds *= -1
-
-            lstate = np.matrix(
-                [lx + ds * math.cos(lyaw), ly + ds * math.sin(lyaw), lyaw])
-            #  print(lstate)
-
-            path = np.vstack((path, lstate))
-
-        return path
+        return False, None, None, None, None, None, None, None
 
     def check_tracking_path_is_feasible(self, path):
         #  print("check_tracking_path_is_feasible")
@@ -194,7 +179,7 @@ class RRT():
         return find_goal, x, y, yaw, v, t, a, d
 
     def choose_parent(self, newNode, nearinds):
-        if len(nearinds) == 0:
+        if not nearinds:
             return newNode
 
         dlist = []
@@ -221,10 +206,8 @@ class RRT():
 
         return newNode
 
-
     def pi_2_pi(self, angle):
-        return (angle + math.pi) % (2*math.pi) - math.pi
-
+        return (angle + math.pi) % (2 * math.pi) - math.pi
 
     def steer(self, rnd, nind):
         #  print(rnd)
@@ -265,7 +248,7 @@ class RRT():
     def get_best_last_indexs(self):
         #  print("get_best_last_index")
 
-        YAWTH = math.radians(1.0)
+        YAWTH = np.deg2rad(1.0)
         XYTH = 0.5
 
         goalinds = []
@@ -298,7 +281,7 @@ class RRT():
             goalind = node.parent
         path.append([self.start.x, self.start.y, self.start.yaw])
 
-        path = np.matrix(path[::-1])
+        path = np.array(path[::-1])
         return path
 
     def calc_dist_to_goal(self, x, y):
@@ -308,9 +291,9 @@ class RRT():
         nnode = len(self.nodeList)
         r = 50.0 * math.sqrt((math.log(nnode) / nnode))
         #  r = self.expandDis * 5.0
-        dlist = [(node.x - newNode.x) ** 2 +
-                 (node.y - newNode.y) ** 2 +
-                 (node.yaw - newNode.yaw) ** 2
+        dlist = [(node.x - newNode.x) ** 2
+                 + (node.y - newNode.y) ** 2
+                 + (node.yaw - newNode.yaw) ** 2
                  for node in self.nodeList]
         nearinds = [dlist.index(i) for i in dlist if i <= r ** 2]
         return nearinds
@@ -333,7 +316,7 @@ class RRT():
                 #  print("rewire")
                 self.nodeList[i] = tNode
 
-    def DrawGraph(self, rnd=None):
+    def DrawGraph(self, rnd=None):  # pragma: no cover
         """
         Draw Graph
         """
@@ -356,9 +339,9 @@ class RRT():
         plt.pause(0.01)
 
     def GetNearestListIndex(self, nodeList, rnd):
-        dlist = [(node.x - rnd.x) ** 2 +
-                 (node.y - rnd.y) ** 2 +
-                 (node.yaw - rnd.yaw) ** 2 for node in nodeList]
+        dlist = [(node.x - rnd.x) ** 2
+                 + (node.y - rnd.y) ** 2
+                 + (node.yaw - rnd.yaw) ** 2 for node in nodeList]
         minind = dlist.index(min(dlist))
 
         return minind
@@ -404,8 +387,8 @@ class Node():
         self.parent = None
 
 
-def main():
-    print("Start rrt start planning")
+def main(gx=6.0, gy=7.0, gyaw=np.deg2rad(90.0), maxIter=500):
+    print("Start" + __file__)
     # ====Search Path with RRT====
     obstacleList = [
         (5, 5, 1),
@@ -420,16 +403,16 @@ def main():
     ]  # [x,y,size(radius)]
 
     # Set Initial parameters
-    start = [0.0, 0.0, math.radians(0.0)]
-    goal = [6.0, 7.0, math.radians(90.0)]
+    start = [0.0, 0.0, np.deg2rad(0.0)]
+    goal = [gx, gy, gyaw]
 
-    rrt = RRT(start, goal, randArea=[-2.0, 20.0], obstacleList=obstacleList)
+    rrt = RRT(start, goal, randArea=[-2.0, 20.0],
+              obstacleList=obstacleList, maxIter=maxIter)
     flag, x, y, yaw, v, t, a, d = rrt.Planning(animation=show_animation)
 
     if not flag:
         print("cannot find feasible path")
 
-    #  flg, ax = plt.subplots(1)
     # Draw final path
     if show_animation:
         rrt.DrawGraph()
@@ -437,27 +420,27 @@ def main():
         plt.grid(True)
         plt.pause(0.001)
 
-        flg, ax = plt.subplots(1)
-        plt.plot(t, [math.degrees(iyaw) for iyaw in yaw[:-1]], '-r')
+        plt.subplots(1)
+        plt.plot(t, [np.rad2deg(iyaw) for iyaw in yaw[:-1]], '-r')
         plt.xlabel("time[s]")
         plt.ylabel("Yaw[deg]")
         plt.grid(True)
 
-        flg, ax = plt.subplots(1)
+        plt.subplots(1)
         plt.plot(t, [iv * 3.6 for iv in v], '-r')
 
         plt.xlabel("time[s]")
         plt.ylabel("velocity[km/h]")
         plt.grid(True)
 
-        flg, ax = plt.subplots(1)
+        plt.subplots(1)
         plt.plot(t, a, '-r')
         plt.xlabel("time[s]")
         plt.ylabel("accel[m/ss]")
         plt.grid(True)
 
-        flg, ax = plt.subplots(1)
-        plt.plot(t, [math.degrees(td) for td in d], '-r')
+        plt.subplots(1)
+        plt.plot(t, [np.rad2deg(td) for td in d], '-r')
         plt.xlabel("time[s]")
         plt.ylabel("Steering angle[deg]")
         plt.grid(True)

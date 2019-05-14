@@ -45,7 +45,7 @@ class KDTree:
         self.tree = scipy.spatial.cKDTree(data)
 
     def search(self, inp, k=1):
-        u"""
+        """
         Search NN
 
         inp: input data, single frame or multi frame
@@ -62,12 +62,12 @@ class KDTree:
                 dist.append(idist)
 
             return index, dist
-        else:
-            dist, index = self.tree.query(inp, k=k)
-            return index, dist
+
+        dist, index = self.tree.query(inp, k=k)
+        return index, dist
 
     def search_in_distance(self, inp, r):
-        u"""
+        """
         find points with in a distance r
         """
 
@@ -106,14 +106,14 @@ def is_collision(sx, sy, gx, gy, rr, okdtree):
     nstep = round(d / D)
 
     for i in range(nstep):
-        idxs, dist = okdtree.search(np.matrix([x, y]).T)
+        idxs, dist = okdtree.search(np.array([x, y]).reshape(2, 1))
         if dist[0] <= rr:
             return True  # collision
         x += D * math.cos(yaw)
         y += D * math.sin(yaw)
 
     # goal point check
-    idxs, dist = okdtree.search(np.matrix([gx, gy]).T)
+    idxs, dist = okdtree.search(np.array([gx, gy]).reshape(2, 1))
     if dist[0] <= rr:
         return True  # collision
 
@@ -137,8 +137,8 @@ def generate_roadmap(sample_x, sample_y, rr, obkdtree):
     for (i, ix, iy) in zip(range(nsample), sample_x, sample_y):
 
         index, dists = skdtree.search(
-            np.matrix([ix, iy]).T, k=nsample)
-        inds = index[0][0]
+            np.array([ix, iy]).reshape(2, 1), k=nsample)
+        inds = index[0]
         edge_id = []
         #  print(index)
 
@@ -176,7 +176,7 @@ def dijkstra_planning(sx, sy, gx, gy, ox, oy, rr, road_map, sample_x, sample_y):
     openset[len(road_map) - 2] = nstart
 
     while True:
-        if len(openset) == 0:
+        if not openset:
             print("Cannot find path")
             break
 
@@ -230,9 +230,9 @@ def dijkstra_planning(sx, sy, gx, gy, ox, oy, rr, road_map, sample_x, sample_y):
     return rx, ry
 
 
-def plot_road_map(road_map, sample_x, sample_y):
+def plot_road_map(road_map, sample_x, sample_y):  # pragma: no cover
 
-    for i in range(len(road_map)):
+    for i, _ in enumerate(road_map):
         for ii in range(len(road_map[i])):
             ind = road_map[i][ii]
 
@@ -252,7 +252,7 @@ def sample_points(sx, sy, gx, gy, rr, ox, oy, obkdtree):
         tx = (random.random() - minx) * (maxx - minx)
         ty = (random.random() - miny) * (maxy - miny)
 
-        index, dist = obkdtree.search(np.matrix([tx, ty]).T)
+        index, dist = obkdtree.search(np.array([tx, ty]).reshape(2, 1))
 
         if dist[0] >= rr:
             sample_x.append(tx)
@@ -307,7 +307,7 @@ def main():
 
     rx, ry = PRM_planning(sx, sy, gx, gy, ox, oy, robot_size)
 
-    assert len(rx) != 0, 'Cannot found path'
+    assert rx, 'Cannot found path'
 
     if show_animation:
         plt.plot(rx, ry, "-r")

@@ -172,15 +172,15 @@ class BITStar(object):
         cBest = self.g_scores[self.goalId]
 
         # Computing the sampling space
-        cMin = math.sqrt(pow(self.start[0] - self.goal[1], 2) +
-                         pow(self.start[0] - self.goal[1], 2)) / 1.5
-        xCenter = np.matrix([[(self.start[0] + self.goal[0]) / 2.0],
-                             [(self.goal[1] - self.start[1]) / 2.0], [0]])
-        a1 = np.matrix([[(self.goal[0] - self.start[0]) / cMin],
-                        [(self.goal[1] - self.start[1]) / cMin], [0]])
+        cMin = math.sqrt(pow(self.start[0] - self.goal[0], 2)
+                         + pow(self.start[1] - self.goal[1], 2)) / 1.5
+        xCenter = np.array([[(self.start[0] + self.goal[0]) / 2.0],
+                            [(self.start[1] + self.goal[1]) / 2.0], [0]])
+        a1 = np.array([[(self.goal[0] - self.start[0]) / cMin],
+                       [(self.goal[1] - self.start[1]) / cMin], [0]])
         etheta = math.atan2(a1[1], a1[0])
         # first column of idenity matrix transposed
-        id1_t = np.matrix([1.0, 0.0, 0.0])
+        id1_t = np.array([1.0, 0.0, 0.0]).reshape(1, 3)
         M = np.dot(a1, id1_t)
         U, S, Vh = np.linalg.svd(M, 1, 1)
         C = np.dot(np.dot(U, np.diag(
@@ -314,7 +314,7 @@ class BITStar(object):
             try:
                 currId = self.nodes[currId]
             except(KeyError):
-                print("Path key error")
+                print("cannot find Path")
                 return []
 
         plan.append(self.start)
@@ -413,8 +413,8 @@ class BITStar(object):
     def bestVertexQueueValue(self):
         if(len(self.vertex_queue) == 0):
             return float('inf')
-        values = [self.g_scores[v] +
-                  self.computeHeuristicCost(v, self.goalId) for v in self.vertex_queue]
+        values = [self.g_scores[v]
+                  + self.computeHeuristicCost(v, self.goalId) for v in self.vertex_queue]
         values.sort()
         return values[0]
 
@@ -422,8 +422,8 @@ class BITStar(object):
         if(len(self.edge_queue) == 0):
             return float('inf')
         # return the best value in the queue by score g_tau[v] + c(v,x) + h(x)
-        values = [self.g_scores[e[0]] + self.computeDistanceCost(e[0], e[1]) +
-                  self.computeHeuristicCost(e[1], self.goalId) for e in self.edge_queue]
+        values = [self.g_scores[e[0]] + self.computeDistanceCost(e[0], e[1])
+                  + self.computeHeuristicCost(e[1], self.goalId) for e in self.edge_queue]
         values.sort(reverse=True)
         return values[0]
 
@@ -459,7 +459,6 @@ class BITStar(object):
         # add an edge to the edge queue is the path might improve the solution
         for neighbor in neigbors:
             sid = neighbor[0]
-            scoord = neighbor[1]
             estimated_f_score = self.computeDistanceCost(
                 self.startId, vid) + self.computeHeuristicCost(sid, self.goalId) + self.computeDistanceCost(vid, sid)
             if estimated_f_score < self.g_scores[self.goalId]:
@@ -474,7 +473,7 @@ class BITStar(object):
             for v, edges in self.tree.vertices.items():
                 if v != vid and (v, vid) not in self.edge_queue and (vid, v) not in self.edge_queue:
                     vcoord = self.tree.nodeIdToRealWorldCoord(v)
-                    if(np.linalg.norm(vcoord - currCoord, 2) <= self.r and v != vid):
+                    if(np.linalg.norm(vcoord - currCoord, 2) <= self.r):
                         neigbors.append((vid, vcoord))
 
             for neighbor in neigbors:
@@ -531,7 +530,6 @@ class BITStar(object):
 
     def drawGraph(self, xCenter=None, cBest=None, cMin=None, etheta=None,
                   samples=None, start=None, end=None, tree=None):
-        print("Plotting Graph")
         plt.clf()
         for rnd in samples:
             if rnd is not None:
@@ -551,7 +549,7 @@ class BITStar(object):
         plt.grid(True)
         plt.pause(0.01)
 
-    def plot_ellipse(self, xCenter, cBest, cMin, etheta):
+    def plot_ellipse(self, xCenter, cBest, cMin, etheta):  # pragma: no cover
 
         a = math.sqrt(cBest**2 - cMin**2) / 2.0
         b = cBest / 2.0
@@ -562,16 +560,16 @@ class BITStar(object):
         t = np.arange(0, 2 * math.pi + 0.1, 0.1)
         x = [a * math.cos(it) for it in t]
         y = [b * math.sin(it) for it in t]
-        R = np.matrix([[math.cos(angle), math.sin(angle)],
-                       [-math.sin(angle), math.cos(angle)]])
-        fx = R * np.matrix([x, y])
+        R = np.array([[math.cos(angle), math.sin(angle)],
+                      [-math.sin(angle), math.cos(angle)]])
+        fx = R @ np.array([x, y])
         px = np.array(fx[0, :] + cx).flatten()
         py = np.array(fx[1, :] + cy).flatten()
         plt.plot(cx, cy, "xc")
         plt.plot(px, py, "--c")
 
 
-def main():
+def main(maxIter=80):
     print("Starting Batch Informed Trees Star planning")
     obstacleList = [
         (5, 5, 0.5),
@@ -583,7 +581,7 @@ def main():
     ]
 
     bitStar = BITStar(start=[-1, 0], goal=[3, 8], obstacleList=obstacleList,
-                      randArea=[-2, 15])
+                      randArea=[-2, 15], maxIter=maxIter)
     path = bitStar.plan(animation=show_animation)
     print("Done")
 

@@ -1,9 +1,12 @@
 *.csv
+*.gif
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+_build/
+.idea/
 
 # C extensions
 *.so

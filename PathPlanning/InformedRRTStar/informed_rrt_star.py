@@ -44,16 +44,17 @@ class InformedRRTStar():
         path = None
 
         # Computing the sampling space
-        cMin = math.sqrt(pow(self.start.x - self.goal.x, 2) +
-                         pow(self.start.y - self.goal.y, 2))
-        xCenter = np.matrix([[(self.start.x + self.goal.x) / 2.0],
-                             [(self.start.y + self.goal.y) / 2.0], [0]])
-        a1 = np.matrix([[(self.goal.x - self.start.x) / cMin],
-                        [(self.goal.y - self.start.y) / cMin], [0]])
+        cMin = math.sqrt(pow(self.start.x - self.goal.x, 2)
+                         + pow(self.start.y - self.goal.y, 2))
+        xCenter = np.array([[(self.start.x + self.goal.x) / 2.0],
+                            [(self.start.y + self.goal.y) / 2.0], [0]])
+        a1 = np.array([[(self.goal.x - self.start.x) / cMin],
+                       [(self.goal.y - self.start.y) / cMin], [0]])
+
         etheta = math.atan2(a1[1], a1[0])
         # first column of idenity matrix transposed
-        id1_t = np.matrix([1.0, 0.0, 0.0])
-        M = np.dot(a1, id1_t)
+        id1_t = np.array([1.0, 0.0, 0.0]).reshape(1, 3)
+        M = a1 @ id1_t
         U, S, Vh = np.linalg.svd(M, 1, 1)
         C = np.dot(np.dot(U, np.diag(
             [1.0, 1.0, np.linalg.det(U) * np.linalg.det(np.transpose(Vh))])), Vh)
@@ -128,8 +129,8 @@ class InformedRRTStar():
     def findNearNodes(self, newNode):
         nnode = len(self.nodeList)
         r = 50.0 * math.sqrt((math.log(nnode) / nnode))
-        dlist = [(node.x - newNode.x) ** 2 +
-                 (node.y - newNode.y) ** 2 for node in self.nodeList]
+        dlist = [(node.x - newNode.x) ** 2
+                 + (node.y - newNode.y) ** 2 for node in self.nodeList]
         nearinds = [dlist.index(i) for i in dlist if i <= r ** 2]
         return nearinds
 
@@ -174,8 +175,8 @@ class InformedRRTStar():
             node1_y = path[i][1]
             node2_x = path[i - 1][0]
             node2_y = path[i - 1][1]
-            pathLen += math.sqrt((node1_x - node2_x) **
-                                 2 + (node1_y - node2_y)**2)
+            pathLen += math.sqrt((node1_x - node2_x)
+                                 ** 2 + (node1_y - node2_y)**2)
 
         return pathLen
 
@@ -183,8 +184,8 @@ class InformedRRTStar():
         return math.sqrt((node1.x - node2.x)**2 + (node1.y - node2.y)**2)
 
     def getNearestListIndex(self, nodes, rnd):
-        dList = [(node.x - rnd[0])**2 +
-                 (node.y - rnd[1])**2 for node in nodes]
+        dList = [(node.x - rnd[0])**2
+                 + (node.y - rnd[1])**2 for node in nodes]
         minIndex = dList.index(min(dList))
         return minIndex
 
@@ -219,8 +220,8 @@ class InformedRRTStar():
         for i in nearInds:
             nearNode = self.nodeList[i]
 
-            d = math.sqrt((nearNode.x - newNode.x)**2 +
-                          (nearNode.y - newNode.y)**2)
+            d = math.sqrt((nearNode.x - newNode.x)**2
+                          + (nearNode.y - newNode.y)**2)
 
             scost = newNode.cost + d
 
@@ -274,7 +275,7 @@ class InformedRRTStar():
         plt.grid(True)
         plt.pause(0.01)
 
-    def plot_ellipse(self, xCenter, cBest, cMin, etheta):
+    def plot_ellipse(self, xCenter, cBest, cMin, etheta):  # pragma: no cover
 
         a = math.sqrt(cBest**2 - cMin**2) / 2.0
         b = cBest / 2.0
@@ -285,9 +286,9 @@ class InformedRRTStar():
         t = np.arange(0, 2 * math.pi + 0.1, 0.1)
         x = [a * math.cos(it) for it in t]
         y = [b * math.sin(it) for it in t]
-        R = np.matrix([[math.cos(angle), math.sin(angle)],
-                       [-math.sin(angle), math.cos(angle)]])
-        fx = R * np.matrix([x, y])
+        R = np.array([[math.cos(angle), math.sin(angle)],
+                      [-math.sin(angle), math.cos(angle)]])
+        fx = R @ np.array([x, y])
         px = np.array(fx[0, :] + cx).flatten()
         py = np.array(fx[1, :] + cy).flatten()
         plt.plot(cx, cy, "xc")

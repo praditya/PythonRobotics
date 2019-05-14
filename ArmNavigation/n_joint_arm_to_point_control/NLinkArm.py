@@ -12,7 +12,7 @@ class NLinkArm(object):
     def __init__(self, link_lengths, joint_angles, goal, show_animation):
         self.show_animation = show_animation
         self.n_links = len(link_lengths)
-        if self.n_links is not len(joint_angles):
+        if self.n_links != len(joint_angles):
             raise ValueError()
 
         self.link_lengths = np.array(link_lengths)
@@ -22,7 +22,7 @@ class NLinkArm(object):
         self.lim = sum(link_lengths)
         self.goal = np.array(goal).T
 
-        if show_animation:
+        if show_animation:  # pragma: no cover
             self.fig = plt.figure()
             self.fig.canvas.mpl_connect('button_press_event', self.click)
 
@@ -46,10 +46,10 @@ class NLinkArm(object):
                 np.sin(np.sum(self.joint_angles[:i]))
 
         self.end_effector = np.array(self.points[self.n_links]).T
-        if self.show_animation:
+        if self.show_animation:  # pragma: no cover
             self.plot()
 
-    def plot(self):
+    def plot(self):  # pragma: no cover
         plt.cla()
 
         for i in range(self.n_links + 1):
